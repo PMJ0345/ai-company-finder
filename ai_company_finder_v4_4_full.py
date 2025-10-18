@@ -42,7 +42,11 @@ Summarise the company '{company_name}' in 1-2 short paragraphs covering:
 - MJID.dk fit, main objection, counter arguments, and contacts.
 '''
 
-    response = client.responses.create(model="gpt-5", input=prompt, web_search=True)
+    response = client.responses.create(
+    model="gpt-5",
+    input=f"{prompt}\n\nAnswer based on the most up-to-date and verifiable online information you know. Be concise and factual."
+)
+
     return response.output_text
 
 def generate_pdf_v4_4(company_name, text):
