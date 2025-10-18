@@ -42,7 +42,12 @@ QUESTIONS = [
 # Get company info (full text answering all 10 Qs)
 # ----------------------------------------------------------
 def get_company_info(company_name: str) -> str:
-    prompt = f\"\"\"Answer the following 10 questions about the company '{company_name}' clearly and factually in English.
+   prompt = f"""Answer the following 10 questions about the company '{company_name}' clearly and factually in English.
+Prefix each answer with the corresponding question number, e.g. "1. …", "2. …", etc.
+
+{os.linesep.join(QUESTIONS)}
+"""
+
 Prefix each answer with the corresponding question number, e.g. "1. …", "2. …", etc.
 
 {os.linesep.join(QUESTIONS)}
