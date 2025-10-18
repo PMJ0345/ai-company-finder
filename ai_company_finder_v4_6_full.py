@@ -11,7 +11,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 # ----------------------------------------------------------
-# App configuration
+# APP CONFIGURATION
 # ----------------------------------------------------------
 st.set_page_config(page_title="AI Company Finder v4.6", page_icon=":robot_face:", layout="centered")
 
@@ -23,7 +23,7 @@ if not api_key:
 client = OpenAI(api_key=api_key)
 
 # ----------------------------------------------------------
-# Questions shown before each answer
+# QUESTIONS
 # ----------------------------------------------------------
 QUESTIONS = [
     "1. What types of products do they develop?",
@@ -39,30 +39,31 @@ QUESTIONS = [
 ]
 
 # ----------------------------------------------------------
-# Get company info (full text answering all 10 Qs)
+# FETCH COMPANY INFO
 # ----------------------------------------------------------
 def get_company_info(company_name: str) -> str:
-   prompt = f"""Answer the following 10 questions about the company '{company_name}' clearly and factually in English.
-Prefix each answer with the corresponding question number, e.g. "1. …", "2. …", etc.
+    prompt = f"""Answer the following 10 questions about the company '{company_name}' clearly and factually in English.
+Prefix each answer with the corresponding question number (e.g. "1.", "2.", etc).
 
 {os.linesep.join(QUESTIONS)}
 """
-
-Prefix each answer with the corresponding question number, e.g. "1. …", "2. …", etc.
-
-{os.linesep.join(QUESTIONS)}
-\"\"\"
     resp = client.chat.completions.create(
         model="gpt-4o",
         messages=[
-            {"role": "system", "content": "You are a fact-seeking research assistant that provides concise, structured answers to company-related questions."},
+            {
+                "role": "system",
+                "content": (
+                    "You are a fact-seeking research assistant that provides concise, "
+                    "structured answers to company-related questions."
+                ),
+            },
             {"role": "user", "content": prompt},
         ],
     )
     return resp.choices[0].message.content
 
 # ----------------------------------------------------------
-# Try to download a small company logo via Clearbit using the main domain
+# GET COMPANY LOGO (Clearbit)
 # ----------------------------------------------------------
 def get_company_logo(company_name: str):
     try:
@@ -86,13 +87,13 @@ def get_company_logo(company_name: str):
     return None
 
 # ----------------------------------------------------------
-# Generate compact PDF with headings, initials, date, and optional logo
+# GENERATE PDF REPORT
 # ----------------------------------------------------------
 def generate_pdf_v4_6(company_name: str, text: str, user_initials: str, logo_path: str | None) -> str:
     styles = getSampleStyleSheet()
     base = styles["Normal"]
     base.fontSize = 9
-    base.leading = 11  # compact line spacing
+    base.leading = 11
     small = ParagraphStyle('small', parent=base, spaceAfter=4)
     h2 = ParagraphStyle('h2', parent=styles["Heading2"], fontSize=12, spaceAfter=6)
     h3 = ParagraphStyle('h3', parent=styles["Heading3"], fontSize=10, spaceAfter=3)
@@ -116,7 +117,7 @@ def generate_pdf_v4_6(company_name: str, text: str, user_initials: str, logo_pat
     elements.append(Paragraph("<b>AI Company Strategy Report</b>", h2))
     elements.append(Paragraph(f"<b>Company:</b> {company_name}", h3))
 
-    # Logo (small, under company line)
+    # Logo (optional)
     if logo_path:
         try:
             elements.append(Image(logo_path, width=2.5*cm, height=2.5*cm))
@@ -124,7 +125,7 @@ def generate_pdf_v4_6(company_name: str, text: str, user_initials: str, logo_pat
             pass
     elements.append(Spacer(1, 0.3*cm))
 
-    # Split the model answer by numbered questions "1.", "2.", ...
+    # Split answers by numbered markers
     parts = re.split(r"(?=\n?\d+\.)", text)
     for part in parts:
         if not part.strip():
@@ -147,10 +148,10 @@ def generate_pdf_v4_6(company_name: str, text: str, user_initials: str, logo_pat
     return filename
 
 # ----------------------------------------------------------
-# Streamlit UI
+# STREAMLIT APP UI
 # ----------------------------------------------------------
-st.title("AI Company Finder v4.6")
-st.write("Generates a structured company insight report for MJID.dk — with questions shown, logo, initials, and date.")
+st.title("🤖 AI Company Finder v4.6")
+st.write("Generates structured company insight reports for MJID.dk — including initials, logo, and compact PDF layout.")
 
 user_initials = st.text_input("Enter your initials (e.g. PMJ)", max_chars=6)
 company_name = st.text_input("Enter company name", placeholder="e.g. Grundfos, LEGO, Danfoss...")
@@ -163,30 +164,28 @@ if st.button("Search & Generate Report", use_container_width=True):
     else:
         with st.spinner("Generating company insights..."):
             try:
-                # 1) Get answers
                 answer = get_company_info(company_name)
-                st.success("Report generated.")
+                st.success("✅ Report generated successfully.")
                 st.markdown(answer)
 
-                # 2) Try logo
-                st.caption("Attempting to download logo…")
+                st.divider()
+                st.caption("Attempting to download logo...")
                 logo_path = get_company_logo(company_name)
                 if logo_path:
                     st.image(logo_path, width=100, caption="Company logo")
                 else:
                     st.write("(Logo not found)")
 
-                # 3) Build PDF
                 pdf_path = generate_pdf_v4_6(company_name, answer, user_initials, logo_path)
                 with open(pdf_path, "rb") as f:
                     st.download_button(
-                        label="Download PDF Report",
+                        label="📄 Download PDF Report",
                         data=f,
                         file_name=f"{company_name}_AI_Report.pdf",
-                        mime="application/pdf",
+                        mime="application/pdf"
                     )
             except Exception as e:
-                st.error(f"An error occurred: {e}")
+                st.error(f"❌ An error occurred: {e}")
 
-st.markdown('---')
-st.caption("Developed for MJID.dk · v4.6 · Streamlit & OpenAI")
+st.markdown("---")
+st.caption("Developed by your AI assistant 🤖 · Version 4.6 · Streamlit & OpenAI")
